@@ -1,0 +1,64 @@
+name: Build AVIYAN Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build-apk:
+    name: Build AVIYAN APK
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Android build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            git \
+            zip \
+            unzip \
+            openjdk-17-jdk \
+            autoconf \
+            automake \
+            libtool \
+            pkg-config \
+            zlib1g-dev \
+            libncurses5-dev \
+            libncursesw5-dev \
+            cmake \
+            libffi-dev \
+            libssl-dev
+
+      - name: Install Python build tools
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          pip install buildozer cython==0.29.37
+
+      - name: Build AVIYAN APK
+        working-directory: aviyan-ai-main/mobile_app
+        run: |
+          buildozer android debug
+
+      - name: Find APK
+        run: |
+          find aviyan-ai-main/mobile_app/bin -type f -name "*.apk" -print
+
+      - name: Upload AVIYAN APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: AVIYAN-Android-APK
+          path: aviyan-ai-main/mobile_app/bin/*.apk
+          if-no-files-found: error
