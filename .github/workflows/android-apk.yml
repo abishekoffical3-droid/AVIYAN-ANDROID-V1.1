@@ -23,43 +23,100 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Set up Java
+      - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
 
-      - name: Install Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install Android SDK packages
+      - name: Configure Android SDK
+        shell: bash
         run: |
-          yes | sdkmanager --licenses || true
-          sdkmanager "platform-tools" \
-                     "platforms;android-35" \
-                     "build-tools;35.0.0"
+          set -e
+
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
+
+          export ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          export ANDROID_SDK_ROOT="$ANDROID_HOME"
+
+          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> "$GITHUB_ENV"
+
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+
+          if [ ! -f "$SDKMANAGER" ]; then
+            SDKMANAGER="$ANDROID_HOME/cmdline-tools/16.0/bin/sdkmanager"
+          fi
+
+          echo "Using sdkmanager: $SDKMANAGER"
+
+          yes | "$SDKMANAGER" --licenses || true
+
+          "$SDKMANAGER" \
+            "platform-tools" \
+            "platforms;android-35" \
+            "build-tools;35.0.0"
+
+      - name: Verify Android SDK
+        shell: bash
+        run: |
+          set -e
+
+          echo "=== Android SDK ==="
+          echo "$ANDROID_HOME"
+
+          echo "=== SDK packages ==="
+          "$ANDROID_HOME/cmdline-tools/16.0/bin/sdkmanager" --list | head -80 || true
+
+          echo "=== ADB ==="
+          "$ANDROID_HOME/platform-tools/adb" version
+
+          echo "=== Build Tools ==="
+          ls -la "$ANDROID_HOME/build-tools"
 
       - name: Install Buildozer
         run: |
           python -m pip install --upgrade pip
-          python -m pip install buildozer cython==0.29.34
+          python -m pip install buildozer
+          python -m pip install "cython==0.29.34"
 
-      - name: Check mobile app
+      - name: Check AVIYAN mobile app
         working-directory: aviyan-ai-main/mobile_app
         run: |
           echo "=== AVIYAN mobile app ==="
           pwd
           ls -la
+
           echo "=== buildozer.spec ==="
           cat buildozer.spec
 
-      - name: Build APK
+          echo "=== main.py ==="
+          python -m py_compile main.py
+
+      - name: Build AVIYAN APK
         working-directory: aviyan-ai-main/mobile_app
         env:
           BUILDOZER_WARN_ON_ROOT: "1"
+          ANDROID_HOME: /usr/local/lib/android/sdk
+          ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
         run: |
+          set -e
+
+          echo "=== Buildozer version ==="
+          buildozer --version
+
+          echo "=== Cleaning old build ==="
           buildozer android clean
+
+          echo "=== Building APK ==="
           buildozer android debug
+
+      - name: Find APK
+        working-directory: aviyan-ai-main/mobile_app
+        run: |
+          echo "=== Generated APK files ==="
+          find bin -type f -name "*.apk" -print
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
