@@ -1,3 +1,83 @@
+name: Build AVIYAN Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build-apk:
+    name: Build AVIYAN APK
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Configure Android SDK
+        shell: bash
+        run: |
+          set -e
+
+          export ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          export ANDROID_SDK_ROOT="$ANDROID_HOME"
+
+          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> "$GITHUB_ENV"
+
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+
+          if [ ! -f "$SDKMANAGER" ]; then
+            SDKMANAGER="$ANDROID_HOME/cmdline-tools/16.0/bin/sdkmanager"
+          fi
+
+          echo "Using sdkmanager: $SDKMANAGER"
+
+          yes | "$SDKMANAGER" --licenses || true
+
+          "$SDKMANAGER" \
+            "platform-tools" \
+            "platforms;android-35" \
+            "build-tools;35.0.0"
+
+      - name: Verify Android SDK
+        run: |
+          echo "Android SDK: $ANDROID_HOME"
+          ls -la "$ANDROID_HOME/build-tools"
+          "$ANDROID_HOME/platform-tools/adb" version
+
+      - name: Install Buildozer
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install buildozer
+          python -m pip install "cython==0.29.34"
+
+      - name: Check AVIYAN mobile app
+        working-directory: aviyan-ai-main/mobile_app
+        run: |
+          echo "=== AVIYAN mobile app ==="
+          pwd
+          ls -la
+          echo "=== buildozer.spec ==="
+          cat buildozer.spec
+          echo "=== Checking main.py ==="
+          python -m py_compile main.py
+
       - name: Build AVIYAN APK
         working-directory: aviyan-ai-main/mobile_app
         env:
@@ -12,3 +92,16 @@
 
           echo "=== Building AVIYAN APK ==="
           buildozer android debug
+
+      - name: Find APK
+        working-directory: aviyan-ai-main/mobile_app
+        run: |
+          echo "=== Generated APK ==="
+          find bin -type f -name "*.apk" -print
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: AVIYAN-Android-APK
+          path: aviyan-ai-main/mobile_app/bin/*.apk
+          if-no-files-found: error
