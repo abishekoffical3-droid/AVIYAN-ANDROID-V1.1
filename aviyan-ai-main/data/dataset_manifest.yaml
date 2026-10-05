@@ -1,0 +1,24 @@
+datasets:
+  nepali:
+    target_ratio: 0.25
+    path: data/raw/nepali
+
+  hindi:
+    target_ratio: 0.25
+    path: data/raw/hindi
+
+  english:
+    target_ratio: 0.25
+    path: data/raw/english
+
+  coding:
+    target_ratio: 0.15
+    path: data/raw/coding
+
+  conversations:
+    target_ratio: 0.05
+    path: data/raw/conversations
+
+  instructions:
+    target_ratio: 0.05
+    path: data/raw/instructions

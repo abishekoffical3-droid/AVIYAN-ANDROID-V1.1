@@ -1,0 +1,8 @@
+torch>=2.5
+tokenizers>=0.20
+PyYAML>=6.0
+safetensors>=0.4
+numpy>=1.26
+fastapi>=0.115
+uvicorn[standard]>=0.30
+pydantic>=2.8

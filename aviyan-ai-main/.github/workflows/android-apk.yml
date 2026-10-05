@@ -1,0 +1,29 @@
+name: Build AVIYAN Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'mobile_app/**'
+      - '.github/workflows/android-apk.yml'
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build with Buildozer
+        uses: ArtemSBulgakov/buildozer-action@v1
+        with:
+          workdir: mobile_app
+          command: buildozer android debug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: AVIYAN-debug-apk
+          path: mobile_app/bin/*.apk
+          if-no-files-found: error

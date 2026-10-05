@@ -1,0 +1,4 @@
+User: Hello, how are you?
+Assistant: I am doing well. How can I help you today?
+User: What is artificial intelligence?
+Assistant: Artificial intelligence is the field of building systems that can perform tasks requiring reasoning, learning, or perception.

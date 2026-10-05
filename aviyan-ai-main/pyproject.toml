@@ -1,0 +1,8 @@
+[project]
+name='aviyan'
+version='1.0.0'
+description='AVIYAN AI ecosystem by AB DEV STUDIO'
+requires-python='>=3.10'
+dependencies=['fastapi>=0.110','uvicorn>=0.27','pydantic>=2','torch>=2.2']
+[tool.pytest.ini_options]
+pythonpath=['.']
